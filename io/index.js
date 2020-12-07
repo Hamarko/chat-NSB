@@ -11,57 +11,99 @@ export default function () {
     // close this server on 'close' event
     this.nuxt.hook('close', () => new Promise(server.close))    
     // Add socket.io events
-    const users = Users()        
-    io.on('connection', socket => {      
+    const users = Users() 
+    const messages = []           
+    io.on('connection', socket => {       
       socket.on('logMssage', (data) =>{
-        console.log('logMssage', data)
+        console.log('logMssage', data)        
+      })      
+      socket.on('disconnect', function() {
+        console.log('Got disconnect!',socket.id)
+        const disconnectUser = users.getAllUsers().find(u=>u.socetId === socket.id)
+        if (disconnectUser){
+          disconnectUser.online = false
+          users.uppdateUser(disconnectUser)
+          console.log('disconnect',disconnectUser.id)
+          io.emit('disconnect-user', disconnectUser.id)
+        }
+      })      
+      socket.on('last-messages', (fn) => {         
+        return fn(users.getAllUsers(),messages)
       })
-      socket.on('last-messages', fn => fn(users.getAllUsers()))
       // Add new User
-      socket.on('create-user', user => {
-        console.log(socket.id,user)
+      socket.on('create-user', user => {       
         user.socetId = socket.id
         if(!users.get(user.id)){
           users.add(user)
-          console.log(users.getAllUsers())
+          console.log("Uppdate user",users.getAllUsers())
           socket.broadcast.emit('new-user',user)
+        }else{
+          console.log("Uppdate user id = ",user.id)
+          users.uppdateUser(user)
         }
       })
       // Add message
       socket.on('send-message', message =>{ 
         const to = message.to
         const from = message.from
+        const date = new Date ()
+        const options = {
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true
+            };
+        const time = new Intl.DateTimeFormat('en-US', options).format(date)
+        const messageId = String(date.getUTCMilliseconds())
         //Echo bot
+        console.log(message)
         if (to === "1") {          
-          users.addM(message)
-          message.to =  from
-          message.from = to                   
-          users.addM(message)
-          io.to(socket.id).emit('new-message',message)
+          messages.push(message)
+          const reversMessage= {
+            text:message.text.split('').reverse().join(''),
+            name:"Reverse bot",
+            date:time,
+            messageId,
+            to:from,
+            from:to}                   
+          messages.push(reversMessage)
+          io.to(socket.id).emit('new-message',reversMessage)
         }
         //Reverse bot 
         else if(to === "2") {
-          users.addM(message)
-          message.text = message.text.split('').reverse().join('')
-          message.to =  from
-          message.from = to 
+          messages.push(message)
+          const reversMessage= {
+                                text:message.text.split('').reverse().join(''),
+                                name:"Reverse bot",
+                                date:time,
+                                messageId,
+                                to:from,
+                                from:to}      
           setTimeout(() => {
-            users.addM(message)
-            io.to(socket.id).emit('new-message',message)
+            messages.push(reversMessage)
+            io.to(socket.id).emit('new-message',reversMessage)
           }, 3000);     
         }
+        // User new message 
         else  {
           const user = users.get(message.to)
-          users.addM(message)        
+          messages.push(message)        
           io.to(user.socetId).emit('new-message',message)        
-        }             
-        const time = Math.floor(Math.random() * (Math.floor(120000) - Math.ceil(10000))) + Math.ceil(10000);
-        setInterval(() => {         
-         message.from = 1 
-         message.text = "Этот пример возвращает случайное целое число в заданном интервале. Возвращаемое значение не менее min (или следующее целое число, кото"        
-         socket.broadcast.emit('new-message',message)
-        }, time);
-      })      
+        } 
+        //Spam bot            
+        const timeFrame = Math.floor(Math.random() * (Math.floor(120000) - Math.ceil(10000))) + Math.ceil(10000);
+        const spam = {text:"Этот пример возвращает случайное целое число в заданном интервале. Возвращаемое значение не менее min",
+                      name:"Spam bot",
+                      date:time,
+                      messageId,
+                      from: "3",
+                      to: "all"}   
+        setInterval(() => {
+
+         io.emit('new-message',spam)
+        }, timeFrame);
+      })
+      
     })
+    
   })
 }

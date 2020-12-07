@@ -10,9 +10,8 @@
           </b-row>
         <div class="chat-area">         
             <Message 
-            v-for="m in users.find(u=> u.id===currentUserId).allMassages
-            .filter(u=> u.to === selfAccounts.id || u.from === selfAccounts.id)" 
-            :key="m.id" :name="m.name" :text="m.text" :date="m.date" :owner="m.owner"/>                             
+            v-for="m in messages.filter(m=> m.to===currentUserId || m.from===currentUserId)" 
+            :key="m.messageId" :name="m.name" :text="m.text" :date="m.date" :owner="m.to===currentUserId"/>                             
         </div>
         <div class="chat-form">
           <ChatForm @message='sendMessage' />
@@ -33,12 +32,13 @@
             <Bar              
               :name="user.name" 
               :description="user.description" 
-              :link="user.link"                      
+              :link="user.link"
+              :online="!user.online"                      
               />
           </div>
         </b-row>
         <div class="form-shearch">
-          <b-form-input placeholder="Search..." ></b-form-input>
+          <b-form-input placeholder="Search..." v-model="search"></b-form-input>
         </div>        
       </b-col>
     </b-row>
@@ -70,18 +70,14 @@ export default {
     all:{
       card: true,
       activ: false
-    }
+    },
+    search:''
   }),
   asyncData () {
     return new Promise(resolve =>
-      socket.emit('last-messages', users => resolve({ users }))
+      socket.emit('last-messages', (users,messages) => resolve({ users,messages }))
     )
-  },
- 
-  beforeMount () {   
-   
-    
-  },
+  },  
   watch: {
     users: function(newValue) {
       this.users=newValue}
@@ -91,29 +87,35 @@ export default {
     socket.on('new-user', (user) => {      
       this.users.push(user)
     })
-     socket.on('new-message',(message)=>{
-      console.log("Work")
-      this.users[this.users.findIndex[u=>u.id===message.from]]
+    socket.on('new-message',(message)=>{      
+      this.messages.push(message)
+    })     
+    socket.on('disconnect-user',(id)=>{      
+      this.users[this.users.findIndex(u=>u.id===id)].online=false
     })     
   },
+  computed: {},
   methods: {
-    userFilter(user){
-      console.log(user.id === this.selfAccounts.id)
-      if (user.id === this.selfAccounts.id) return false
-      console.log(this.online.card && this.all.activ )
-      if (this.online.card && this.all.activ ) return true
-      if (!this.online.card && !this.all.activ && user.online) return true
+    userFilter(user){           
+      if (user.id === this.selfAccounts.id) return false      
+      if (this.online.card && this.all.activ ) {
+        return (this.search==="")? true: user.name.includes(this.search)
+      }        
+      if (!this.online.card && !this.all.activ && user.online) {
+        return (this.search==="")? true: user.name.includes(this.search)
+        }
     },    
-    creatUser(){
+    creatUser(){      
       if(localStorage.selfID){
         console.log(localStorage.selfID)
-        this.selfAccounts.id = localStorage.selfID   
-        console.log(this.selfAccounts.id) 
+        this.selfAccounts.id = localStorage.selfID
+        this.selfAccounts.name =  this.selfAccounts.name+"-"+localStorage.selfID     
+        socket.emit('create-user',this.selfAccounts) 
       } else{
         const id = new Date ()     
         localStorage.selfID = id.getUTCMilliseconds()
         this.selfAccounts.id = String(id.getUTCMilliseconds())
-        console.log(this.selfAccounts)
+        this.selfAccounts.name =  this.selfAccounts.name+"-"+localStorage.selfID
         socket.emit('create-user',this.selfAccounts)     
       }
     },    
@@ -143,17 +145,23 @@ export default {
       const {name,id} = this.selfAccounts
       const user = this.users.find(u => u.id === this.currentUserId) 
       const date = new Date ()
+      const messageId = String(date.getUTCMilliseconds())
       const options = {
             hour: 'numeric',
             minute: 'numeric',
             hour12: true
               };
       const time = new Intl.DateTimeFormat('en-US', options).format(date)
-      const sendMessage = {text, name,date:time, from: id, to: this.currentUserId,owner: true}  
-      console.log(sendMessage)   
-      console.log(this.users[this.users.findIndex(u => u.id === this.currentUserId)])
-      this.users[this.users.findIndex(u => u.id === this.currentUserId)].allMassages.push(sendMessage)
-      socket.emit('send-message', sendMessage)      
+      const sendMessage = {text,
+                           name,
+                           date:time,
+                           messageId,
+                           from: id,
+                           to: this.currentUserId}  
+      console.log(sendMessage)    
+      this.messages.push(sendMessage)      
+      socket.emit('send-message', sendMessage)
+      console.log(this.messages)      
     }    
   },
   

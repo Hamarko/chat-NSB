@@ -5,7 +5,7 @@
         <img :src="getImgUrl(link)" alt="">
       </div>
       <svg class='circle-svg' viewBox="0 0 80 80" width="15" height="15">
-        <circle class="circle" cx="40" cy="40" r="38"/>
+        <circle class="circle" :class="{online}" cx="40" cy="40" r="38"/>
       </svg>              
     </div>
     <div class="text-content">
@@ -20,7 +20,11 @@
     props:{
       name:String,
       description:String,
-      link:String,        
+      link:String,
+      online: {
+        type: Boolean,
+        default: false
+      }        
     },
     data: () => ({
       selected:false
@@ -60,6 +64,9 @@
 }
 .circle {  
   fill: #1fd63d;   
+}
+.online { 
+  fill: #838383;
 }
 .user-cart{  
   display: flex;    
