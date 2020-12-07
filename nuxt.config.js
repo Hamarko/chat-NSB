@@ -17,7 +17,8 @@ export default {
   ],
 
   // Plugins to run before rendering page (https://go.nuxtjs.dev/config-plugins)
-  plugins: [
+  plugins: [   
+    {src: '~/plugins/socket.io.js',  mode: 'client'},
   ],
 
   // Auto import components (https://go.nuxtjs.dev/config-components)
@@ -31,7 +32,12 @@ export default {
   modules: [
     // https://go.nuxtjs.dev/bootstrap
     'bootstrap-vue/nuxt',
+    '~/io'
   ],
+  env: {
+    WS_URL: process.env.WS_URL || 'http://localhost:3000'
+  },
+
 
   // Build Configuration (https://go.nuxtjs.dev/config-build)
   build: {

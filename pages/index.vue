@@ -1,74 +1,162 @@
 <template>   
     <b-row class="content" >
-      <b-col cols="9" class="chat">
-        <b-row class='chat-header'>         
-          <img src="../static/gif2.jpg" alt="">         
-          <b-col class="header-text">
-            <h2>Reverse bot</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, 
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-               Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris 
-               nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-               reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-               pariatur. </p>
-          </b-col>        
-        </b-row>
-        <div class="chat-area">
-
+      <b-col cols="9" class="chat">    
+          <b-row class='chat-header'>         
+            <img :src="getImgUrl(users.find(u=> u.id===currentUserId).link)" alt="">         
+            <b-col class="header-text">
+              <h2>{{users.find(u=> u.id===currentUserId).name}}</h2>
+              <p>{{users.find(u=> u.id===currentUserId).description}}</p>
+            </b-col>        
+          </b-row>
+        <div class="chat-area">         
+            <Message 
+            v-for="m in users.find(u=> u.id===currentUserId).allMassages
+            .filter(u=> u.to === selfAccounts.id || u.from === selfAccounts.id)" 
+            :key="m.id" :name="m.name" :text="m.text" :date="m.date" :owner="m.owner"/>                             
         </div>
         <div class="chat-form">
-
+          <ChatForm @message='sendMessage' />
         </div>
       </b-col>
       <b-col cols="3" class="users">
         <b-row style="margin-bottom:10px">
-          <b-col class="card-activ"><p>Onlin</p></b-col>
-          <b-col class="card"><p>All</p></b-col>
+          <b-col  :class="online" v-on:click="switchOnline"><p>Online</p></b-col>
+          <b-col  :class="all" v-on:click="switchAll"><p>All</p></b-col>
         </b-row>
-        <b-row class="card-container">
-          <div class="user-cart">
-            <div class="img-wrapper">
-              <div class="img-box">
-                <img src="../static/gif1.jpg" alt="">
-              </div>
-              <svg class='circle-svg' viewBox="0 0 80 80" width="20" height="20">
-                <circle class="circle" cx="40" cy="40" r="38"/>
-              </svg>              
-            </div>
-            <div class="text-content">
-              <h6>Echo bot</h6>
-              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-            </div>            
-          </div>          
-          <div class="user-cart">
-            <div class="img-wrapper">
-              <div class="img-box">
-                <img src="../static/gif1.jpg" alt="">
-              </div>
-              <svg class='circle-svg' viewBox="0 0 80 80" width="20" height="20">
-                <circle class="circle" cx="40" cy="40" r="38"/>
-              </svg>              
-            </div>
-            <div class="text-content">
-              <h6>Echo bot</h6>
-              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-            </div>            
-          </div>          
+        <b-row class="card-container" >
+          <div  
+           v-for="user in users.filter(userFilter)" 
+           :key="user.id"   
+           :class="{selctCart:user.id===currentUserId}"
+           v-on:click="selectCart(user.id)" 
+          >
+            <Bar              
+              :name="user.name" 
+              :description="user.description" 
+              :link="user.link"                      
+              />
+          </div>
         </b-row>
         <div class="form-shearch">
           <b-form-input placeholder="Search..." ></b-form-input>
         </div>        
-      </b-col>      
+      </b-col>
     </b-row>
    
 </template>
 
 <script>
 import Message from "@/components/Message";
+import ChatForm from "@/components/ChatForm";
+import Bar from "@/components/ChatForm";
+import socket from '~/plugins/socket.io.js'
+
 export default {
-  data:()=> ({   
-    messages:[],
+  data:()=> ({     
+    selfAccounts:{
+      id: String,
+      name:'Anonymous',
+      description:'Excepteur sint occaecat cupidatat non proident, unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam eaque ipsa, velit esse cillum dolore eu fugiat nulla pariatur.',
+      bot: false,
+      online:true,
+      link:'gif5.jpg',
+      allMassages:[]
+    },
+    currentUserId:"1",
+    online:{
+      card: false,
+      activ: true
+    },
+    all:{
+      card: true,
+      activ: false
+    }
   }),
+  asyncData () {
+    return new Promise(resolve =>
+      socket.emit('last-messages', users => resolve({ users }))
+    )
+  },
+ 
+  beforeMount () {   
+   
+    
+  },
+  watch: {
+    users: function(newValue) {
+      this.users=newValue}
+    },  
+  mounted(){
+    this.creatUser()
+    socket.on('new-user', (user) => {      
+      this.users.push(user)
+    })
+     socket.on('new-message',(message)=>{
+      console.log("Work")
+      this.users[this.users.findIndex[u=>u.id===message.from]]
+    })     
+  },
+  methods: {
+    userFilter(user){
+      console.log(user.id === this.selfAccounts.id)
+      if (user.id === this.selfAccounts.id) return false
+      console.log(this.online.card && this.all.activ )
+      if (this.online.card && this.all.activ ) return true
+      if (!this.online.card && !this.all.activ && user.online) return true
+    },    
+    creatUser(){
+      if(localStorage.selfID){
+        console.log(localStorage.selfID)
+        this.selfAccounts.id = localStorage.selfID   
+        console.log(this.selfAccounts.id) 
+      } else{
+        const id = new Date ()     
+        localStorage.selfID = id.getUTCMilliseconds()
+        this.selfAccounts.id = String(id.getUTCMilliseconds())
+        console.log(this.selfAccounts)
+        socket.emit('create-user',this.selfAccounts)     
+      }
+    },    
+    switchAll(){
+      this.online.card = true
+      this.online.activ = false
+      this.all.card = false
+      this.all.activ = true     
+        },
+    switchOnline(){
+      this.online.card = false
+      this.online.activ = true
+      this.all.card = true
+      this.all.activ = false
+    },
+    selectCart(id){
+      this.currentChat = this.users.find(u=> u.id===id)
+      this.currentUserId = id
+    },
+    getImgUrl(link){
+      if (link) return require("../assets/"+link)
+      },
+    sendMessage(message){
+      const {text} = message
+      console.log(text)
+      if (!text.trim()) { return }
+      const {name,id} = this.selfAccounts
+      const user = this.users.find(u => u.id === this.currentUserId) 
+      const date = new Date ()
+      const options = {
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+              };
+      const time = new Intl.DateTimeFormat('en-US', options).format(date)
+      const sendMessage = {text, name,date:time, from: id, to: this.currentUserId,owner: true}  
+      console.log(sendMessage)   
+      console.log(this.users[this.users.findIndex(u => u.id === this.currentUserId)])
+      this.users[this.users.findIndex(u => u.id === this.currentUserId)].allMassages.push(sendMessage)
+      socket.emit('send-message', sendMessage)      
+    }    
+  },
+  
 }
 </script>
 
@@ -76,10 +164,14 @@ export default {
 .content{
   min-height: 651px;
 }
-
+.chat{
+  background-color: #d7dfe7ff;
+  border-radius: 4px; 
+}
 .chat-header{
   height: 170px;
   background-color: #becbd9;
+  overflow-y: auto;
 }
 .chat-header img{
   height: 170px;
@@ -92,93 +184,50 @@ export default {
   right: 0;
   padding: 1rem;
   height: 80px;
-  background: #212121;
 }
 .chat-area {
   position: absolute;
-  top: 0;
+  top: 170px;
   right: 0;
   left: 0;
   bottom: 80px;
   padding: 1rem;
   overflow-y: auto;
 }
+.users{  
+  background-color:#fff;
+  border-radius: 4px;  
+}
 .card-container{
   min-height: 540px;
   justify-content: flex-start;
   align-content: flex-start;
 }
-.user-cart{  
-  display: flex;    
-  height: 70px;
-  padding: 5px;
-  }
-.text-content{    
-  flex-direction: column;
-  overflow: hidden;
-  margin-left: 16px;
+.card{
+  height: 42px; 
+  background-color: #f8f8f8; 
+  background-clip: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0;
 }
-.text-content p{   
-  overflow: hidden;
-  text-overflow: ellipsis; 
+.card p{  
   color: #777777;
-}
-.text-content h6{ 
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom:0;
+  }
+.activ{
+    height: 42px;
+} 
+.activ p{ 
+  text-align: center;
+  margin-top: 10px;
   margin-bottom:0;
 }
 .form-shearch{
   justify-self: flex-end;
 }
-.user-cart img{
-  width: 60px;
-  height: 60px;
-  border-radius: 3px;
-  background-color: #ededed;
+.selctCart{
+  background-color: #f8f8f8;
 }
-.circle-svg{
-    margin-left: 45px;
-    margin-top: -30px;
-}
-.circle {  
-  fill: #1fd63d;   
-}
-.users{  
-  background-color:#fff;
-  border-radius: 4px;
-  
-}
-.chat{
-  background-color: #d7dfe7ff;
-  border-radius: 4px; 
-}
-.card-activ{
-  height: 42px;}
-.card{
-  height: 42px; 
-  background-color: #f8f8f8; 
-  border-radius: 0px;
-}
-.card p{
-  font-size: 14px;
-  line-height: 26px;
-  color: #777777;
-  font-weight: 400;
-  font-family: "Open Sans";
-  text-align: center;
-  margin-top: 10px;
-  margin-bottom:0;
-  }
-  
-.card-activ p{  
-  font-size: 14px;
-  line-height: 26px;
-  color: #555555;
-  font-weight: 400;
-  font-family: "Open Sans";
-  text-align: center;
-  margin-top: 10px;
-  margin-bottom:0;
-}
-
-
 </style>
