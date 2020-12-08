@@ -11,7 +11,7 @@ export default function () {
     // close this server on 'close' event
     this.nuxt.hook('close', () => new Promise(server.close))    
     // Add socket.io events
-    const users = Users() 
+    const users = Users()
     const messages = []           
     io.on('connection', socket => {       
       socket.on('logMssage', (data) =>{
@@ -40,6 +40,7 @@ export default function () {
         }else{
           console.log("Uppdate user id = ",user.id)
           users.uppdateUser(user)
+          socket.broadcast.emit('new-user',user)
         }
       })
       // Add message
@@ -59,8 +60,8 @@ export default function () {
         if (to === "1") {          
           messages.push(message)
           const reversMessage= {
-            text:message.text.split('').reverse().join(''),
-            name:"Reverse bot",
+            text:message,
+            name:"Echo bot",
             date:time,
             messageId,
             to:from,

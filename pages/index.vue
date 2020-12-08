@@ -1,6 +1,6 @@
 <template>   
     <b-row class="content" >
-      <b-col cols="9" class="chat">    
+      <b-col cols="9" class="chat" id="Chat">    
           <b-row class='chat-header'>         
             <img :src="getImgUrl(users.find(u=> u.id===currentUserId).link)" alt="">         
             <b-col class="header-text">
@@ -17,8 +17,9 @@
           <ChatForm @message='sendMessage' />
         </div>
       </b-col>
-      <b-col cols="3" class="users">
+      <b-col cols="3" class="users" :class="hidden" id="Sidebar">        
         <b-row style="margin-bottom:10px">
+          <b-button  v-on:click="slidebarButton" class="open"><span v-html="arrow"></span></b-button>
           <b-col  :class="online" v-on:click="switchOnline"><p>Online</p></b-col>
           <b-col  :class="all" v-on:click="switchAll"><p>All</p></b-col>
         </b-row>
@@ -71,7 +72,9 @@ export default {
       card: true,
       activ: false
     },
-    search:''
+    search:'',
+    hidden:true,
+    arrow:"&laquo;"
   }),
   asyncData () {
     return new Promise(resolve =>
@@ -157,14 +160,19 @@ export default {
                            date:time,
                            messageId,
                            from: id,
-                           to: this.currentUserId}  
-      console.log(sendMessage)    
+                           to: this.currentUserId}      
       this.messages.push(sendMessage)      
-      socket.emit('send-message', sendMessage)
-      console.log(this.messages)      
-    }    
-  },
-  
+      socket.emit('send-message', sendMessage)        
+    },
+    slidebarButton() {
+      this.header = !this.header
+      if(this.header){
+        this.arrow = "&laquo;";
+      }else{
+        this.arrow = "&rsaquo;";
+      }
+    }   
+  },  
 }
 </script>
 
@@ -205,6 +213,7 @@ export default {
 .users{  
   background-color:#fff;
   border-radius: 4px;  
+  min-height: 651px;
 }
 .card-container{
   min-height: 540px;
@@ -237,5 +246,28 @@ export default {
 }
 .selctCart{
   background-color: #f8f8f8;
+}
+.open{
+  margin-left: -30px;
+}
+@media screen and (max-width: 950px) {
+  #Chat{
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .hidden{
+    display: none;
+  }
+  #Sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 100px; 
+    bottom: 100px;   
+    right: 0px;    
+    /* top layer */
+    z-index: 9999;
+  }
 }
 </style>
