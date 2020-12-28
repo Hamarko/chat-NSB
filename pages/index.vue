@@ -88,9 +88,9 @@ export default {
   mounted(){
     this.creatUser()
     socket.on('new-user', (user) => { 
-      console.log(this.users.find(u => u.id === user.id))
-      if  (this.users.find(u => u.id === user.id)){
-        this.users[this.users.findIndex(u=>u.id===user.id)].online=false
+      console.log(this.users, user)
+      if  (this.users.find(u => u.id === user.id)){       
+        this.users[this.users.findIndex(u=>u.id===user.id)].online=true
       }else{
         this.users.push(user)
       } 
@@ -98,7 +98,7 @@ export default {
     })
     socket.on('new-message',(message)=>{      
       this.messages.push(message)
-      console.log(this.messages)
+      console.log(this.message)
     })     
     socket.on('disconnect-user',(id)=>{      
       this.users[this.users.findIndex(u=>u.id===id)].online=false

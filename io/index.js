@@ -33,9 +33,10 @@ export default function () {
       // Add new User
       socket.on('create-user', user => {       
         user.socetId = socket.id
+        console.log(user)
         if(!users.get(user.id)){
           users.add(user)
-          console.log("Uppdate user-",users.getAllUsers())
+          console.log("Uppdate user-")
           socket.broadcast.emit('new-user',user)
         }else{
           console.log("Uppdate user id = ",user.id)
@@ -91,7 +92,7 @@ export default function () {
           io.to(user.socetId).emit('new-message',message)        
         } 
         //Spam bot            
-        const timeFrame = Math.floor(Math.random() * (Math.floor(120000) - Math.ceil(10000))) + Math.ceil(10000);
+        const timeFrame = Math.floor(Math.random() * (Math.floor(1200000) - Math.ceil(100000))) + Math.ceil(100000);
         const spam = {text:"Этот пример возвращает случайное целое число в заданном интервале. Возвращаемое значение не менее min",
                       name:"Spam bot",
                       date:time,
