@@ -35,7 +35,7 @@ export default function () {
         user.socetId = socket.id
         if(!users.get(user.id)){
           users.add(user)
-          console.log("Uppdate user",users.getAllUsers())
+          console.log("Uppdate user-",users.getAllUsers())
           socket.broadcast.emit('new-user',user)
         }else{
           console.log("Uppdate user id = ",user.id)
@@ -59,15 +59,15 @@ export default function () {
         console.log(message)
         if (to === "1") {          
           messages.push(message)
-          const reversMessage= {
-            text:message,
+          const echoMessage= {
+            text:message.text,
             name:"Echo bot",
             date:time,
             messageId,
             to:from,
             from:to}                   
-          messages.push(reversMessage)
-          io.to(socket.id).emit('new-message',reversMessage)
+          messages.push(echoMessage)
+          io.to(socket.id).emit('new-message',echoMessage)
         }
         //Reverse bot 
         else if(to === "2") {
@@ -99,7 +99,6 @@ export default function () {
                       from: "3",
                       to: "all"}   
         setInterval(() => {
-
          io.emit('new-message',spam)
         }, timeFrame);
       })
