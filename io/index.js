@@ -27,14 +27,17 @@ export default function () {
           io.emit('disconnect-user', disconnectUser.id)
         }
       })      
-      socket.on('last-messages', (fn) => {         
-        return fn(users.getAllUsers(),messages)
+      socket.on('last-messages', (fn) => { 
+        const currentUserId =   users.getAllUsers().find(u=> u.socetId=== socket.id)
+        console.log("user",users.filter(u=> u.socetId=== socket.id)) 
+        console.log("Massage",messages)     
+        return fn(users.getAllUsers(),messages.filter(m=> m.to=== currentUserId || m.from=== currentUserId))
       })
       // Add new User
       socket.on('create-user', user => {       
         user.socetId = socket.id
         console.log(user)
-        if(!users.get(user.id)){
+        if(!users.get(user.id)){``
           users.add(user)
           console.log("Uppdate user-")
           socket.broadcast.emit('new-user',user)

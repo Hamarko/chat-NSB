@@ -93,8 +93,7 @@ export default {
         this.users[this.users.findIndex(u=>u.id===user.id)].online=true
       }else{
         this.users.push(user)
-      } 
-      
+      }      
     })
     socket.on('new-message',(message)=>{      
       this.messages.push(message)
